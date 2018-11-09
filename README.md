@@ -1,6 +1,6 @@
-# neufair-musicplaylist
+# neufair-debate
 
-> A system for judging the Music Playlist event in the NEU Fair 2018
+> A system for judging the Debate event in the NEU Fair 2018
 
 ## Build Setup
 
