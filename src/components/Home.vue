@@ -25,9 +25,20 @@
             <br />
             <p id="collegeName">College of {{ collegeNames[i] }}</p>
           </div>
-          <div class="col s2" id="cardThirdCol">
-            <h6 id="aveScore" class="green-text text-accent-2">{{ getAveScorePercentages(aveScorePercentages[i]) }}</h6>
-          </div>
+          <!-- <template v-for="index1 in teamNames"> -->
+            <!-- <template v-for="isTeamNameForAveScorePercentage in isTeamNameForAveScorePercentages"> -->
+              <!-- teamNameForAveScorePercentages[index] == teamName v-if="isTeamNameForAveScorePercentages[i] == true"-->
+              <div class="col s2" id="cardThirdCol">
+                <!-- <template>{{ testing() }}</template> -->
+                <h6 id="aveScore" class="green-text text-accent-2">{{ getAveScorePercentages(aveScorePercentages[i]) }}</h6>
+              </div>
+              <!-- <div class="col s2" id="cardThirdCol" v-else>
+                <h6 id="aveScore" class="green-text text-accent-2">0.0</h6>
+              </div> -->
+            <!-- </template> -->
+          <!-- </template> -->
+          <!-- <template> {{test()}}</template> -->
+
         </div>
       </a>
       <!-- Modal Trigger End -->
@@ -99,6 +110,7 @@
 <script>
 import axios from 'axios'
 import {headers} from '@/scripts/headers'
+import assignWindowLocation from '@/scripts/global-functions'
 
 export default {
   data() {
@@ -107,6 +119,8 @@ export default {
       collegeNames: [],
       collegeLogos: [],
       aveScorePercentages: [],
+      // teamNameForAveScorePercentages: [],
+      // isTeamNameForAveScorePercentages: [],
       score: {
         score1: null,
         score2: null,
@@ -120,8 +134,19 @@ export default {
       },
       teamName: null,
       i: null,
-      boolContinue: true
+      boolContinue: true,
+      judgeNumber: null,
+      isUserLoggedIn: null
+      // count: 0
+      // test: []
     }
+  },
+  created() {
+    // Get judgeNumber then pass data
+    this.judgeNumber = this.$route.params.judgeNumber;
+
+    // TODO: get isUserLoggedIn, pass data to isUserLoggedIn then set isUserLoggedIn to false
+    this.getUserLoggedIn();
   },
   mounted() {
     // Get Team Names from DB
@@ -133,24 +158,92 @@ export default {
     // Get College Logos from DB
     this.getCollegeLogos();
 
+    // Get Team Name for Average Score Percentage
+    // this.getTeamNameForAveScorePecentage();
+
     // Get Average Score Percentages from DB
     this.getAveScorePercentagesRaw();
+
+    // this.getIsTeamNameForAveScorePercentage();
 
     // Modal Init
     $('.modal').modal();
 
     // Tooltip Init
     $('#btnClose').tooltip({delay: 30});
+
+    // Current judgeNumber
+    console.log(this.judgeNumber + " this is the current judgeNumber logged in");
   },
+  // beforeUpdate() {
+  //   this.count = 0;
+  // },
   methods: {
+    // testing() {
+      // this.count += 1;
+      // console.log("getAveScorePercentages method. New counter value - " + this.count);
+      // return this.count+=1
+      // console.log(aveScorePercentage);
+      // console.log(this.aveScorePercentages.length + " before shift");
+      // this.aveScorePercentages.shift();
+      // console.log(this.aveScorePercentages.length + " after shift");
+    //   console.log(this.test + " testing push");
+    //   return this.test.push("1");
+    // },
+    // getIsTeamNameForAveScorePercentage() {
+    //   axios.get('/api/is_ave_score_percentages/' + this.judgeNumber)
+    //     .then(response => {
+    //       this.isTeamNameForAveScorePercentages = response.data;
+    //       console.log("getIsTeamNameForAveScorePercentage method. Response data - " + this.isTeamNameForAveScorePercentages);
+    //     })
+    //     .catch(e => {
+    //       console.log(e);
+    //     })
+    //
+    //   // for(var i = 0; i < this.teamNames.length; i++) {
+    //   //   for(var j = 0; j < this.teamNameForAveScorePercentages.length; j++) {
+    //   //     if(this.teamNames[i] == this.teamNameForAveScorePercentages[j]) {
+    //   //       this.isAveScorePercentages.push(true);
+    //   //       console.log("isTeamNameForAveScorePercentages method. True" - this.teamNames[i]);
+    //   //     }
+    //   //   }
+    //   //   this.isAveScorePercentages.push(false);
+    //   //   console.log("isTeamNameForAveScorePercentages method. False" - this.teamNames[i]);
+    //   // }
+    // },
+    getUserLoggedIn() {
+      axios.get('/api/user_logged_in/' + this.judgeNumber)
+        .then(response => {
+          console.log("user logged in " + response.data);
+          this.isUserLoggedIn = response.data;
+          this.updateUserLoggedInToFalse();
+
+          // TODO: check if this.isUserLoggedIn = true, allow at this page else redirect to home
+          if(!this.isUserLoggedIn) {
+            assignWindowLocation("/");
+          }
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    updateUserLoggedInToFalse() {
+      axios.post('/api/set_user_logged_in/' + false + '/' + this.judgeNumber, {headers: headers})
+        .then(response => {
+          console.log(response.data);
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
     getTeamNames() {
       axios.get('/api/team_names')
         .then(response => {
           this.teamNames = response.data;
-          console.log(this.teamNames)
+          console.log(this.teamNames.length);
         })
         .catch(e => {
-          console.log(e)
+          console.log(e);
         })
     },
     getCollegeNames() {
@@ -179,7 +272,7 @@ export default {
 
       console.log(this.teamName + " this is the clicked team name " + this.i + " this is the clicked index")
 
-      axios.get('/api/scores/' + this.teamName)
+      axios.get('/api/scores/' + this.teamName + '/' + this.judgeNumber)
         .then(response => {
           console.log(response.data);
           if(response.data.score1 == undefined) {
@@ -207,21 +300,37 @@ export default {
         return require('@/assets/' + collegeLogo + '_logo.png');
       }
     },
+    // getTeamNameForAveScorePecentage() {
+    //   axios.get('/api/team_name/ave_score_percentage/' + this.judgeNumber)
+    //     .then(response => {
+    //       this.teamNameForAveScorePercentages = response.data;
+    //       console.log(this.teamNameForAveScorePercentages + " response from teamNameForAveScorePercentages");
+    //     })
+    //     .catch(e => {
+    //       console.log(e);
+    //     })
+    // },
     getAveScorePercentagesRaw() {
-      axios.get('/api/ave_score_percentages')
+      axios.get('/api/ave_score_percentages/' + this.judgeNumber)
         .then(response => {
           this.aveScorePercentages = response.data;
-          console.log(this.aveScorePercentages);
+          console.log(this.aveScorePercentages + " response data from getAveScorePercentagesRaw");
         })
         .catch(e => {
           console.log(e);
         })
     },
     getAveScorePercentages(aveScorePercentage) {
-      console.log(aveScorePercentage);
-      if(aveScorePercentage == undefined) {
-        aveScorePercentage = 0;
-      }
+      console.log(aveScorePercentage + " the averageScorePercentage");
+      // console.log(this.aveScorePercentages.length + " before shift");
+      // this.aveScorePercentages.shift();
+      // console.log(this.aveScorePercentages.length + " after shift");
+      // if(!this.isCalledOnce) {
+      //   console.log("Changing to called once true");
+      //   this.isCalledOnce = true;
+      // } else {
+
+      // }
       return this.roundUpOneDecimalPlace(aveScorePercentage);
     },
     saveScores() {
@@ -234,6 +343,7 @@ export default {
         this.calculateScoreAndTotalPercentage();
 
         var params = new URLSearchParams();
+        params.append('judgeNumber', this.judgeNumber);
         params.append('teamName', this.teamName);
         params.append('collegeName', this.collegeNames[this.i]);
         params.append('score1', this.score.score1);
@@ -250,14 +360,13 @@ export default {
           .then(response => {
             console.log(response.data)
             Materialize.toast(response.data, 3000, "rounded")
+            // this.getTeamNameForAveScorePecentage();
             this.getAveScorePercentagesRaw();
-            // TODO: Manually close the modal
             $('#modal1').modal('close');
           })
           .catch(e => {
             console.log(e)
             Materialize.toast("There's an error encountered while saving scores", 3000, "rounded")
-            // TODO: Manually close the modal
             $('#modal1').modal('close');
           })
       }
@@ -312,19 +421,51 @@ export default {
     submitFinalizedScore() {
       console.log("aveScorePercentages length " + this.aveScorePercentages.length + ", collegeNames length "
        + this.collegeNames.length);
-      if(this.aveScorePercentages.length != this.collegeNames.length) {
-        Materialize.toast("Please give scores to all participants before submitting it to finalized score", 3000, "rounded");
-      } else {
-        // TODO: Post in user table, update finalizing score column to 'true'
+       var isAllowed = true;
 
-        const protocol = window.location.protocol;
-        const hostname = window.location.hostname;
-        const port = window.location.port; // Remove if necessary
-        const pathname = "/submitted";
-        window.location.replace(protocol + "//" + hostname + ":" + port + pathname);
-        // console.log(protocol + "//" + hostname + ":" + port + pathname);
+      for(let i = 0; i < this.aveScorePercentages.length; i++) {
+        if(this.aveScorePercentages[i] == 0.0) {
+          Materialize.toast("Please give scores to all participants before submitting it to finalized score", 3000, "rounded");
+          isAllowed = false;
+        }
       }
+      if(isAllowed) {
+        var params = new URLSearchParams();
+        params.append('judgeNumber', this.judgeNumber);
+
+        axios.post('/api/submit_final_score/' + this.judgeNumber, params, {headers: headers})
+          .then(response => {
+            console.log(response.data);
+            assignWindowLocation("/" + this.judgeNumber + "/submitted")
+          })
+          .catch(e => {
+            console.log(e);
+          })
+      }
+      // if(this.aveScorePercentages.length != this.collegeNames.length) {
+      //   Materialize.toast("Please give scores to all participants before submitting it to finalized score", 3000, "rounded");
+      // } else {
+      //   var params = new URLSearchParams();
+      //   params.append('judgeNumber', this.judgeNumber);
+      //
+      //   axios.post('/api/submit_final_score/' + this.judgeNumber, params, {headers: headers})
+      //     .then(response => {
+      //       console.log(response.data);
+      //       assignWindowLocation("/" + this.judgeNumber + "/submitted")
+      //     })
+      //     .catch(e => {
+      //       console.log(e);
+      //     })
+      // }
     }
+    // assignWindowLocation(pathname) {
+    //   const protocol = window.location.protocol;
+    //   const hostname = window.location.hostname;
+    //   const port = window.location.port; // Remove if necessary
+    //   // const pathname = "/submitted";
+    //
+    //   return window.location.replace(protocol + "//" + hostname + ":" + port + pathname);
+    // }
   }
 }
 </script>

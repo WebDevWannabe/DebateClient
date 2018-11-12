@@ -7,6 +7,8 @@ import VueRouter from 'vue-router'
 
 Vue.config.productionTip = false
 
+Vue.prototype.$eventHub = new Vue(); // Global event bus
+
 // Use packages
 Vue.use(VueRouter)
 
