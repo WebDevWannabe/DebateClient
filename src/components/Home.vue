@@ -5,7 +5,7 @@
         <img src="@/assets/neu_logo.png" width="108" height="108" id="teamLogo">
       </div>
       <div class="col s8"  style="margin-top: -30px;">
-        <h4 class="left-align">Debate</h4>
+        <h4 class="left-align">{{ systemTitle }}</h4>
       </div>
       <div class="col s2" style="margin-top: -15px;">
         <a href="#!" class="waves-effect waves-light btn blue" id="btnSubmit" @click="submitFinalizedScore()">Submit</a>
@@ -115,6 +115,8 @@ import assignWindowLocation from '@/scripts/global-functions'
 export default {
   data() {
     return {
+      systemTitle: null,
+      percentageCriterias: [],
       teamNames: [],
       collegeNames: [],
       collegeLogos: [],
@@ -149,6 +151,12 @@ export default {
     this.getUserLoggedIn();
   },
   mounted() {
+    // Get System Title from DB
+    this.getSystemTitle();
+
+    // Get Percentage Criterias from DB
+    this.getPercentageCriterias();
+
     // Get Team Names from DB
     this.getTeamNames();
 
@@ -227,10 +235,39 @@ export default {
           console.log(e);
         })
     },
+    updateUserLoggedInToTrue() {
+      axios.post('/api/set_user_logged_in/' + true + '/' + this.judgeNumber, {headers: headers})
+        .then(response => {
+          console.log(response.data);
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
     updateUserLoggedInToFalse() {
       axios.post('/api/set_user_logged_in/' + false + '/' + this.judgeNumber, {headers: headers})
         .then(response => {
           console.log(response.data);
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    getSystemTitle() {
+      axios.get('/api/system_title')
+        .then(response => {
+          console.log(response.data + " response data from getSystemTitle");
+          this.systemTitle = response.data;
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    getPercentageCriterias() {
+      axios.get('/api/percentage_criterias')
+        .then(response => {
+          this.percentageCriterias = response.data;
+          console.log(this.percentageCriterias);
         })
         .catch(e => {
           console.log(e);
@@ -399,10 +436,10 @@ export default {
     },
     calculateScoreAndTotalPercentage() {
       // Get percentage of each score
-      this.score.scorePercentage1 = this.score.score1 * 0.4;
-      this.score.scorePercentage2 = this.score.score2 * 0.3;
-      this.score.scorePercentage3 = this.score.score3 * 0.2;
-      this.score.scorePercentage4 = this.score.score4 * 0.1;
+      this.score.scorePercentage1 = this.score.score1 * this.percentageCriterias[0];
+      this.score.scorePercentage2 = this.score.score2 * this.percentageCriterias[1];
+      this.score.scorePercentage3 = this.score.score3 * this.percentageCriterias[2];
+      this.score.scorePercentage4 = this.score.score4 * this.percentageCriterias[3];
 
       // Sum of score percentages
       var aveScorePercentageTemp = this.score.scorePercentage1 + this.score.scorePercentage2 + this.score.scorePercentage3
@@ -436,6 +473,7 @@ export default {
         axios.post('/api/submit_final_score/' + this.judgeNumber, params, {headers: headers})
           .then(response => {
             console.log(response.data);
+            this.updateUserLoggedInToTrue();
             assignWindowLocation("/" + this.judgeNumber + "/submitted")
           })
           .catch(e => {
