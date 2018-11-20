@@ -60,7 +60,7 @@
           <h4 id="modalTeamName">{{ this.teamName }}</h4>
           <!-- Criteria 1 -->
           <div class="criteria">
-            <span>Arguments (40%) : </span>
+            <span>Criteria 1 ({{ percentageCriterias[0] * 100 }}%) : </span>
             <div class="input-field inline">
               <!-- TODO: validate field -->
               <input type="number" v-model="score.score1">
@@ -71,7 +71,7 @@
           </div>
           <!-- Criteria 2 -->
           <div class="criteria">
-            <span>Style and Delivery (30%) : </span>
+            <span>Criteria 2 ({{ percentageCriterias[1] * 100 }}%) : </span>
             <div class="input-field inline">
               <input type="number" v-model="score.score2">
               <label v-if="this.score.score2 != null" class="active">1 - 100</label>
@@ -80,7 +80,7 @@
           </div>
           <!-- Criteria 3 -->
           <div class="criteria">
-            <span>Structure of Speech (20%) : </span>
+            <span>Criteria 3 ({{ percentageCriterias[2] * 100 }}%) : </span>
             <div class="input-field inline">
               <input type="number" v-model="score.score3">
               <label v-if="this.score.score3 != null" class="active">1 - 100</label>
@@ -89,7 +89,7 @@
           </div>
           <!-- Criteria 4 -->
           <div class="criteria">
-            <span>Audience Impact (10%) : </span>
+            <span>Criteria 4 ({{ percentageCriterias[3] * 100 }}%) : </span>
             <div class="input-field inline">
               <input type="number" v-model="score.score4">
               <label v-if="this.score.score4 != null" class="active">1 - 100</label>
@@ -464,6 +464,7 @@ export default {
         if(this.aveScorePercentages[i] == 0.0) {
           Materialize.toast("Please give scores to all participants before submitting it to finalized score", 3000, "rounded");
           isAllowed = false;
+          break;
         }
       }
       if(isAllowed) {

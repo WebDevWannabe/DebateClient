@@ -5,12 +5,12 @@
       <h2 class="white-text">Login Page</h2>
 
       <div class="row">
-        <div class="input-field col s6">
+        <div class="input-field col s12" style="margin-top: 50px; margin-left: 30%; width: 40%;">
           <input id="first_name" type="text" class="validate white-text" v-model="username">
           <label for="first_name">First Name</label>
         </div>
-        <div class="input-field col s6">
-          <input id="last_name" type="text" class="validate white-text" v-model="password">
+        <div class="input-field col s12" style="margin-left: 30%; width: 40%;">
+          <input id="last_name" type="password" class="validate white-text" v-model="password">
           <label for="last_name">Last Name</label>
         </div>
       </div>
