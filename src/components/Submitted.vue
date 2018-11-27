@@ -2,6 +2,7 @@
   <div>
     <div class="center-align">
       <h2 class="white-text">The scores are submitted successfully!</h2>
+      <a href="#" @click="goToRankings()">Check Rankings</a>
     </div>
   </div>
 </template>
@@ -15,7 +16,10 @@ export default {
   data() {
     return {
       judgeNumber: null,
-      isUserLoggedIn: null
+      isUserLoggedIn: null,
+      tieBreaker: null,
+      finalBtnSubmitClicked: null,
+      rankings: []
     }
   },
   created() {
@@ -24,6 +28,17 @@ export default {
 
     // Check user if logged in
     this.getUserLoggedIn();
+
+    // Check if users already done scoring
+    this.getSubmitButtonClickedValidation();
+
+    // Update current rankings
+    this.getRankings();
+
+    // Check if there's a tie breaker
+    this.validateTieBreaker();
+  },
+  mounted() {
   },
   methods: {
     getUserLoggedIn() {
@@ -33,10 +48,18 @@ export default {
           this.isUserLoggedIn = response.data;
           this.updateUserLoggedInToFalse();
 
-          // TODO: check if this.isUserLoggedIn = true, allow at this page else redirect to home
           if(!this.isUserLoggedIn) {
             assignWindowLocation("/");
           }
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    updateUserLoggedInToTrue() {
+      axios.post('/api/set_user_logged_in/' + true + '/' + this.judgeNumber, {headers: headers})
+        .then(response => {
+          console.log(response.data);
         })
         .catch(e => {
           console.log(e);
@@ -50,6 +73,54 @@ export default {
         .catch(e => {
           console.log(e);
         })
+    },
+    getRankings() {
+      axios.get('/api/rankings/rank')
+        .then(response => {
+          this.rankings = response.data;
+          console.log(this.rankings.length + " <- rankings length");
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    validateTieBreaker() {
+      // If tied, block at this page then redirect to tieBreaker page to choose between those participants
+      axios.get('/api/rankings/validate')
+        .then(response => {
+          this.tieBreaker = response.data;
+          console.log(this.tieBreaker + " <- tieBreaker");
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    getSubmitButtonClickedValidation() {
+      axios.get('/api/all/submit_button_clicked')
+        .then(response => {
+          console.log("From getSubmitButtonClickedValidation -> " + response.data);
+          this.finalBtnSubmitClicked = response.data;
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    goToRankings() {
+      this.getSubmitButtonClickedValidation();
+      this.validateTieBreaker();
+      if(this.finalBtnSubmitClicked && !this.tieBreaker) {
+        this.updateUserLoggedInToTrue();
+        // if(this.tieBreaker) {
+          //assignWindowLocation("/"); // go to tieBreaker page (battle for 1-3 spot, center modals)
+          // assignWindowLocation("/" + this.judgeNumber + "/tie_breaker")
+        // } else {
+          assignWindowLocation("/" + this.judgeNumber + "/rankings");
+      } else if (this.finalBtnSubmitClicked && this.tieBreaker) {
+        this.updateUserLoggedInToTrue();
+        assignWindowLocation("/" + this.judgeNumber + "/tie_breaker")
+      } else {
+        Materialize.toast("Other judges are still scoring, please wait..", 3000, "rounded");
+      }
     }
   }
 }

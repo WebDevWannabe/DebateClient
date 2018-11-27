@@ -1,6 +1,5 @@
 import axios from 'axios'
 import {headers} from '@/scripts/headers'
-// Functions to be exported
 
 // Change window / url
 export default function assignWindowLocation(pathname) {

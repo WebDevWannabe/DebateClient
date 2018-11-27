@@ -5,7 +5,7 @@
         <img src="@/assets/neu_logo.png" width="108" height="108" id="teamLogo">
       </div>
       <div class="col s8"  style="margin-top: -30px;">
-        <h4 class="left-align">{{ systemTitle }}</h4>
+        <h4 class="left-align">{{ systemTitle }} Tie Breaker</h4> <!-- Insert systemTitle -->
       </div>
       <div class="col s2" style="margin-top: -15px;">
         <a href="#!" class="waves-effect waves-light btn blue" id="btnSubmit" @click="submitFinalizedScore()">Submit</a>
@@ -15,30 +15,19 @@
       <!-- Modal Trigger -->
       <!-- Just iterate the team list from db in server -->
       <a class="waves-effect waves-light btn modal-trigger card-panel grey darken-3 col s4" href="#modal1"
-       id="team" v-for="(teamName, i) in teamNames" @click="getClickedTeamName(teamName, i)">
+       id="team" v-for="(tiedTeamName, i) in tiedTeamNames" @click="getClickedTeamName(tiedTeamName, i)">
         <div class="row">
           <div class="col s2" id="cardFirstCol">
-            <img :src="getPathToLogo(collegeLogos[i])" width="48" height="48" id="teamLogo">
+            <h6>{{ tiedRanks[i] }}</h6>
           </div>
           <div class="col s8" id="cardSecondCol">
-            <p id="teamName">{{ teamName }}</p>
+            <p id="teamName">{{ tiedTeamName }}</p>
             <br />
-            <p id="collegeName">College of {{ collegeNames[i] }}</p>
+            <p id="collegeName">College of {{ tiedCollegeNames[i] }}</p>
           </div>
-          <!-- <template v-for="index1 in teamNames"> -->
-            <!-- <template v-for="isTeamNameForAveScorePercentage in isTeamNameForAveScorePercentages"> -->
-              <!-- teamNameForAveScorePercentages[index] == teamName v-if="isTeamNameForAveScorePercentages[i] == true"-->
-              <div class="col s2" id="cardThirdCol">
-                <!-- <template>{{ testing() }}</template> -->
-                <h6 id="aveScore" class="green-text text-accent-2">{{ getAveScorePercentages(aveScorePercentages[i]) }}</h6>
-              </div>
-              <!-- <div class="col s2" id="cardThirdCol" v-else>
-                <h6 id="aveScore" class="green-text text-accent-2">0.0</h6>
-              </div> -->
-            <!-- </template> -->
-          <!-- </template> -->
-          <!-- <template> {{test()}}</template> -->
-
+          <div class="col s2" id="cardThirdCol">
+            <h6 id="aveScore" class="green-text text-accent-2">{{ roundUpOneDecimalPlace(tiedAveScorePercentages[i]) }}</h6>
+          </div>
         </div>
       </a>
       <!-- Modal Trigger End -->
@@ -51,20 +40,18 @@
       data-position="bottom" data-delay="50" data-tooltip="Close"><i class="material-icons">close</i></a>
       <div class="modal-content row">
         <div class="col s4">
-          <img :src="getPathToLogo(collegeLogos[this.i])" width="156" height="156">
+          <h6>Test</h6> <!-- college logo or logo of 1st, 2nd, 3rd place -->
         </div>
         <div class="col s8 left-align">
           <h4>College of
-            <br /><strong id="modalCollegeName">{{ collegeNames[this.i] }}</strong>
+            <br /><strong id="modalCollegeName">{{ tiedCollegeNames[this.i] }}</strong> <!-- College names from rankings -->
           </h4>
-          <h4 id="modalTeamName">{{ this.teamName }}</h4>
+          <h4 id="modalTeamName">{{ this.tiedTeamName }}</h4>
           <!-- Criteria 1 -->
           <div class="criteria">
-            <span>Criteria 1 ({{ percentageCriterias[0] * 100 }}%) : </span>
+            <span>Criteria 1 ({{ percentageCriterias[0] * 100 }}%) : </span> <!-- Load criteria from utils -->
             <div class="input-field inline">
-              <!-- TODO: validate field -->
-              <input type="number" v-model="score.score1">
-              <!-- If data is null class="" else class="active" -->
+              <input type="number" v-model="score.score1"> <!-- Load scores from scores -->
               <label v-if="this.score.score1 != null" class="active">1 - 100</label>
               <label v-else>1 - 100</label>
             </div>
@@ -115,14 +102,15 @@ import assignWindowLocation from '@/scripts/global-functions'
 export default {
   data() {
     return {
+      judgeNumber: null,
+      isUserLoggedIn: null,
       systemTitle: null,
+      tiedTeamNames: [],
+      tiedCollegeNames: [],
+      tiedFinalScores: [],
+      tiedRanks: [],
+      tiedAveScorePercentages: [],
       percentageCriterias: [],
-      teamNames: [],
-      collegeNames: [],
-      collegeLogos: [],
-      aveScorePercentages: [],
-      // teamNameForAveScorePercentages: [],
-      // isTeamNameForAveScorePercentages: [],
       score: {
         score1: null,
         score2: null,
@@ -134,21 +122,20 @@ export default {
         scorePercentage4: null,
         aveScorePercentage: null
       },
-      teamName: null,
+      tiedTeamName: null,
       i: null,
-      boolContinue: true,
-      judgeNumber: null,
-      isUserLoggedIn: null
-      // count: 0
-      // test: []
+      boolContinue: true
     }
   },
   created() {
     // Get judgeNumber then pass data
     this.judgeNumber = this.$route.params.judgeNumber;
 
-    // TODO: get isUserLoggedIn, pass data to isUserLoggedIn then set isUserLoggedIn to false
+    // Check user if logged in
     this.getUserLoggedIn();
+
+    // Load Info of Tied Teams
+    this.loadTiedTeamsInfo();
   },
   mounted() {
     // Get System Title from DB
@@ -157,76 +144,36 @@ export default {
     // Get Percentage Criterias from DB
     this.getPercentageCriterias();
 
-    // Get Team Names from DB
-    this.getTeamNames();
+    // Get Tied Team Names
+    this.getTiedTeamNames();
 
-    // Get College Names from DB
-    this.getCollegeNames();
+    // Get Tied College Names
+    this.getTiedCollegeNames();
 
-    // Get College Logos from DB
-    this.getCollegeLogos();
+    // Get Tied Final Scores
+    this.getTiedFinalScores();
 
-    // Get Team Name for Average Score Percentage
-    // this.getTeamNameForAveScorePecentage();
+    // Get Tied Ranks
+    this.getTiedRanks();
 
-    // Get Average Score Percentages from DB
-    this.getAveScorePercentagesRaw();
-
-    // this.getIsTeamNameForAveScorePercentage();
+    // Get Tied Ave Score Percentages
+    this.getTiedAveScorePercentages();
 
     // Modal Init
     $('.modal').modal();
 
     // Tooltip Init
     $('#btnClose').tooltip({delay: 30});
-
-    // Current judgeNumber
-    console.log(this.judgeNumber + " this is the current judgeNumber logged in");
   },
-  // beforeUpdate() {
-  //   this.count = 0;
-  // },
   methods: {
-    // testing() {
-      // this.count += 1;
-      // console.log("getAveScorePercentages method. New counter value - " + this.count);
-      // return this.count+=1
-      // console.log(aveScorePercentage);
-      // console.log(this.aveScorePercentages.length + " before shift");
-      // this.aveScorePercentages.shift();
-      // console.log(this.aveScorePercentages.length + " after shift");
-    //   console.log(this.test + " testing push");
-    //   return this.test.push("1");
-    // },
-    // getIsTeamNameForAveScorePercentage() {
-    //   axios.get('/api/is_ave_score_percentages/' + this.judgeNumber)
-    //     .then(response => {
-    //       this.isTeamNameForAveScorePercentages = response.data;
-    //       console.log("getIsTeamNameForAveScorePercentage method. Response data - " + this.isTeamNameForAveScorePercentages);
-    //     })
-    //     .catch(e => {
-    //       console.log(e);
-    //     })
-    //
-    //   // for(var i = 0; i < this.teamNames.length; i++) {
-    //   //   for(var j = 0; j < this.teamNameForAveScorePercentages.length; j++) {
-    //   //     if(this.teamNames[i] == this.teamNameForAveScorePercentages[j]) {
-    //   //       this.isAveScorePercentages.push(true);
-    //   //       console.log("isTeamNameForAveScorePercentages method. True" - this.teamNames[i]);
-    //   //     }
-    //   //   }
-    //   //   this.isAveScorePercentages.push(false);
-    //   //   console.log("isTeamNameForAveScorePercentages method. False" - this.teamNames[i]);
-    //   // }
-    // },
     getUserLoggedIn() {
       axios.get('/api/user_logged_in/' + this.judgeNumber)
         .then(response => {
           console.log("user logged in " + response.data);
           this.isUserLoggedIn = response.data;
           this.updateUserLoggedInToFalse();
+          this.updateBtnSubmitClickedFalse();
 
-          // TODO: check if this.isUserLoggedIn = true, allow at this page else redirect to home
           if(!this.isUserLoggedIn) {
             assignWindowLocation("/");
           }
@@ -246,6 +193,27 @@ export default {
     },
     updateUserLoggedInToFalse() {
       axios.post('/api/set_user_logged_in/' + false + '/' + this.judgeNumber, {headers: headers})
+        .then(response => {
+          console.log(response.data);
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    updateBtnSubmitClickedFalse() {
+      var params = new URLSearchParams();
+      params.append('judgeNumber', this.judgeNumber);
+
+      axios.post('/api/submit_final_score/' + this.judgeNumber + "/false", params, {headers: headers})
+        .then(response => {
+          console.log(response.data);
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    loadTiedTeamsInfo() {
+      axios.get('/api/tie_breaker/load')
         .then(response => {
           console.log(response.data);
         })
@@ -273,43 +241,63 @@ export default {
           console.log(e);
         })
     },
-    getTeamNames() {
-      axios.get('/api/team_names')
+    getTiedTeamNames() {
+      axios.get('/api/tie_breaker/team_names')
         .then(response => {
-          this.teamNames = response.data;
-          console.log(this.teamNames.length);
+          this.tiedTeamNames = response.data;
+          console.log("tiedTeamNames -> " + this.tiedTeamNames);
         })
         .catch(e => {
           console.log(e);
         })
     },
-    getCollegeNames() {
-      axios.get('/api/college_names')
+    getTiedCollegeNames() {
+      axios.get('/api/tie_breaker/college_names')
         .then(response => {
-          this.collegeNames = response.data;
-          console.log(this.collegeNames)
+          this.tiedCollegeNames = response.data;
+          console.log("tiedCollegeNames -> " + this.tiedCollegeNames);
         })
         .catch(e => {
-          console.log(e)
+          console.log(e);
         })
     },
-    getCollegeLogos() {
-      axios.get('/api/college_logos')
+    getTiedFinalScores() {
+      axios.get('/api/tie_breaker/final_scores')
         .then(response => {
-          this.collegeLogos = response.data;
-          console.log(this.collegeLogos)
+          this.tiedFinalScores = response.data;
+          console.log("tiedFinalScores -> " + this.tiedFinalScores);
         })
         .catch(e => {
-          console.log(e)
+          console.log(e);
         })
     },
-    getClickedTeamName(teamName, i) {
-      this.teamName = teamName;
+    getTiedAveScorePercentages() {
+      axios.get('/api/tie_breaker/' + this.judgeNumber  + '/ave_score_percentages')
+        .then(response => {
+          this.tiedAveScorePercentages = response.data;
+          console.log(this.tiedAveScorePercentages + " response data from getTiedAveScorePercentages");
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    getTiedRanks() {
+      axios.get('/api/tie_breaker/ranks')
+        .then(response => {
+          this.tiedRanks = response.data;
+          console.log("tiedRanks -> " + this.tiedRanks);
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    getClickedTeamName(tiedTeamName, i) {
+      this.tiedTeamName = tiedTeamName;
       this.i = i;
 
-      console.log(this.teamName + " this is the clicked team name " + this.i + " this is the clicked index")
+      console.log(this.tiedTeamName + " this is the clicked team name " + this.i + " this is the clicked index")
 
-      axios.get('/api/scores/' + this.teamName + '/' + this.judgeNumber)
+      axios.get('/api/scores/' + this.tiedTeamName + '/' + this.judgeNumber)
         .then(response => {
           console.log(response.data);
           if(response.data.score1 == undefined) {
@@ -328,85 +316,6 @@ export default {
         .catch(e => {
           console.log(e);
         })
-    },
-    getPathToLogo(collegeLogoWithWhiteSpaces) {
-      if(collegeLogoWithWhiteSpaces != undefined) {
-        var collegeLogo = collegeLogoWithWhiteSpaces.replace(/\s/g, "");
-
-        // console.log('@/assets/' + collegeLogo + '_logo.png');
-        return require('@/assets/' + collegeLogo + '_logo.png');
-      }
-    },
-    // getTeamNameForAveScorePecentage() {
-    //   axios.get('/api/team_name/ave_score_percentage/' + this.judgeNumber)
-    //     .then(response => {
-    //       this.teamNameForAveScorePercentages = response.data;
-    //       console.log(this.teamNameForAveScorePercentages + " response from teamNameForAveScorePercentages");
-    //     })
-    //     .catch(e => {
-    //       console.log(e);
-    //     })
-    // },
-    getAveScorePercentagesRaw() {
-      axios.get('/api/ave_score_percentages/' + this.judgeNumber)
-        .then(response => {
-          this.aveScorePercentages = response.data;
-          console.log(this.aveScorePercentages + " response data from getAveScorePercentagesRaw");
-        })
-        .catch(e => {
-          console.log(e);
-        })
-    },
-    getAveScorePercentages(aveScorePercentage) {
-      console.log(aveScorePercentage + " the averageScorePercentage");
-      // console.log(this.aveScorePercentages.length + " before shift");
-      // this.aveScorePercentages.shift();
-      // console.log(this.aveScorePercentages.length + " after shift");
-      // if(!this.isCalledOnce) {
-      //   console.log("Changing to called once true");
-      //   this.isCalledOnce = true;
-      // } else {
-
-      // }
-      return this.roundUpOneDecimalPlace(aveScorePercentage);
-    },
-    saveScores() {
-      this.validateFields();
-      console.log(this.boolContinue);
-
-      if(this.boolContinue == true) {
-        console.log(this.teamName + " teamName " + this.collegeNames[this.i] + " college name")
-
-        this.calculateScoreAndTotalPercentage();
-
-        var params = new URLSearchParams();
-        params.append('judgeNumber', this.judgeNumber);
-        params.append('teamName', this.teamName);
-        params.append('collegeName', this.collegeNames[this.i]);
-        params.append('score1', this.score.score1);
-        params.append('score2', this.score.score2);
-        params.append('score3', this.score.score3);
-        params.append('score4', this.score.score4);
-        params.append('scorePercentage1', this.score.scorePercentage1);
-        params.append('scorePercentage2', this.score.scorePercentage2);
-        params.append('scorePercentage3', this.score.scorePercentage3);
-        params.append('scorePercentage4', this.score.scorePercentage4);
-        params.append('aveScorePercentage', this.score.aveScorePercentage);
-
-        axios.post('/api/submit', params, {headers: headers})
-          .then(response => {
-            console.log(response.data)
-            Materialize.toast(response.data, 3000, "rounded")
-            // this.getTeamNameForAveScorePecentage();
-            this.getAveScorePercentagesRaw();
-            $('#modal1').modal('close');
-          })
-          .catch(e => {
-            console.log(e)
-            Materialize.toast("There's an error encountered while saving scores", 3000, "rounded")
-            $('#modal1').modal('close');
-          })
-      }
     },
     validateFields() {
       console.log(this.score.score4);
@@ -434,6 +343,47 @@ export default {
         }
       }
     },
+    saveScores() {
+      this.validateFields();
+      console.log(this.boolContinue);
+
+      if(this.boolContinue == true) {
+        console.log(this.tiedTeamName + " teamName " + this.tiedCollegeNames[this.i] + " college name")
+
+        this.calculateScoreAndTotalPercentage();
+
+        var params = new URLSearchParams();
+        params.append('judgeNumber', this.judgeNumber);
+        params.append('teamName', this.tiedTeamName);
+        params.append('collegeName', this.tiedCollegeNames[this.i]);
+        params.append('score1', this.score.score1);
+        params.append('score2', this.score.score2);
+        params.append('score3', this.score.score3);
+        params.append('score4', this.score.score4);
+        params.append('scorePercentage1', this.score.scorePercentage1);
+        params.append('scorePercentage2', this.score.scorePercentage2);
+        params.append('scorePercentage3', this.score.scorePercentage3);
+        params.append('scorePercentage4', this.score.scorePercentage4);
+        params.append('aveScorePercentage', this.score.aveScorePercentage);
+
+        axios.post('/api/submit', params, {headers: headers})
+          .then(response => {
+            console.log(response.data)
+            Materialize.toast(response.data, 3000, "rounded")
+            // this.getTeamNameForAveScorePecentage();
+            // this.getAveScorePercentagesRaw();
+            this.getTiedAveScorePercentages();
+            // this.updateRankings();
+            // this.getTiedFinalScores();
+            $('#modal1').modal('close');
+          })
+          .catch(e => {
+            console.log(e)
+            Materialize.toast("There's an error encountered while saving scores", 3000, "rounded")
+            $('#modal1').modal('close');
+          })
+      }
+    },
     calculateScoreAndTotalPercentage() {
       // Get percentage of each score
       this.score.scorePercentage1 = this.score.score1 * this.percentageCriterias[0];
@@ -452,16 +402,27 @@ export default {
        ", scorePercentage3 = " + this.score.scorePercentage3 + ", scorePercentage4 = " + this.score.scorePercentage4 +
        ", aveScorePercentage = " + this.score.aveScorePercentage);
     },
-    roundUpOneDecimalPlace(num) {
-      return (Math.round(num * 10) / 10).toFixed(1);
+    updateRankings() {
+      axios.get('/api/rankings/rank')
+        .then(response => {
+          this.rankings = response.data;
+          console.log(this.rankings + " <- rankings");
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    roundUpOneDecimalPlace(finalScore) {
+      console.log("Final score -> " + finalScore);
+      return (Math.round(finalScore * 10) / 10).toFixed(1);
     },
     submitFinalizedScore() {
-      console.log("aveScorePercentages length " + this.aveScorePercentages.length + ", collegeNames length "
-       + this.collegeNames.length);
+      console.log("tiedAveScorePercentages length " + this.tiedAveScorePercentages.length + ", collegeNames length "
+       + this.tiedCollegeNames.length);
        var isAllowed = true;
 
-      for(let i = 0; i < this.aveScorePercentages.length; i++) {
-        if(this.aveScorePercentages[i] == 0.0) {
+      for(let i = 0; i < this.tiedAveScorePercentages.length; i++) {
+        if(this.tiedAveScorePercentages[i] == 0.0) {
           Materialize.toast("Please give scores to all participants before submitting it to finalized score", 3000, "rounded");
           isAllowed = false;
           break;
@@ -481,30 +442,7 @@ export default {
             console.log(e);
           })
       }
-      // if(this.aveScorePercentages.length != this.collegeNames.length) {
-      //   Materialize.toast("Please give scores to all participants before submitting it to finalized score", 3000, "rounded");
-      // } else {
-      //   var params = new URLSearchParams();
-      //   params.append('judgeNumber', this.judgeNumber);
-      //
-      //   axios.post('/api/submit_final_score/' + this.judgeNumber, params, {headers: headers})
-      //     .then(response => {
-      //       console.log(response.data);
-      //       assignWindowLocation("/" + this.judgeNumber + "/submitted")
-      //     })
-      //     .catch(e => {
-      //       console.log(e);
-      //     })
-      // }
     }
-    // assignWindowLocation(pathname) {
-    //   const protocol = window.location.protocol;
-    //   const hostname = window.location.hostname;
-    //   const port = window.location.port; // Remove if necessary
-    //   // const pathname = "/submitted";
-    //
-    //   return window.location.replace(protocol + "//" + hostname + ":" + port + pathname);
-    // }
   }
 }
 </script>

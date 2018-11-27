@@ -2,7 +2,7 @@
   <div>
     <div class="center-align">
       <img src="@/assets/neu_logo.png" width="156" height="156">
-      <h2 class="white-text">Login Page</h2>
+      <h2 class="white-text">Login</h2>
 
       <div class="row">
         <div class="input-field col s12" style="margin-top: 50px; margin-left: 30%; width: 40%;">
@@ -45,6 +45,7 @@ export default {
       password: null,
       redirectTo: null,
       judgeNumber: null,
+      tieBreaker: null,
       temp: "fuck"
     }
   },
@@ -54,7 +55,7 @@ export default {
     this.redirectTo = null;
     this.judgeNumber = null;
 
-    // TODO: Check here if user is logged in (select isUserLoggedIn from users where )
+    this.validateTieBreaker();
   },
   methods: {
     login() {
@@ -77,7 +78,12 @@ export default {
             // TODO: Function here for updating isUserLoggedIn to true
             if(this.redirectTo == 0) {
               this.updateUserLoggedInToTrue();
-              assignWindowLocation("/" + this.judgeNumber + "/home");
+              // Check if tie breaker is true if true redirect to tie_breaker else home
+              if(this.tieBreaker) {
+                assignWindowLocation("/" + this.judgeNumber + "/tie_breaker");
+              } else {
+                assignWindowLocation("/" + this.judgeNumber + "/home");
+              }
             } else if(this.redirectTo == 1) {
               this.updateUserLoggedInToTrue();
               assignWindowLocation("/" + this.judgeNumber + "/submitted")
@@ -92,6 +98,17 @@ export default {
       axios.post('/api/set_user_logged_in/' + true + '/' + this.judgeNumber, {headers: headers})
         .then(response => {
           console.log(response.data);
+        })
+        .catch(e => {
+          console.log(e);
+        })
+    },
+    validateTieBreaker() {
+      // If tied, block at this page then redirect to tieBreaker page to choose between those participants
+      axios.get('/api/rankings/validate')
+        .then(response => {
+          this.tieBreaker = response.data;
+          console.log(this.tieBreaker + " <- tieBreaker");
         })
         .catch(e => {
           console.log(e);
